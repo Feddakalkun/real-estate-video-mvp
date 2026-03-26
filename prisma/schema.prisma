@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum WalletTransactionType {
+  welcome_bonus
+  topup
+  hold
+  capture
+  refund
+}
+
+enum RenderJobStatus {
+  queued
+  running
+  succeeded
+  failed
+  refunded
+  canceled
+}
+
+enum RenderAssetKind {
+  input_image
+  output_video
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String?  @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  wallet              Wallet?
+  walletTransactions  WalletTransaction[]
+  renderJobs          RenderJob[]
+  stripeCustomers     StripeCustomer[]
+  stripeCheckoutLinks StripeCheckoutSession[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sessionToken])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model Wallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balanceCredits  Int      @default(0)
+  welcomeGranted  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  transactions    WalletTransaction[]
+}
+
+model WalletTransaction {
+  id             String                @id @default(cuid())
+  walletId       String
+  wallet         Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           WalletTransactionType
+  creditsDelta   Int
+  note           String?
+  referenceId    String?
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+
+  @@index([walletId, createdAt])
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+model PricingConfig {
+  id                String   @id @default("global")
+  targetGrossMargin Float    @default(0.6)
+  creditsPerUsd     Int      @default(100)
+  runpodCostPerSec  Float    @default(0.0045)
+  welcomeBonusMin   Int      @default(20)
+  updatedAt         DateTime @updatedAt
+}
+
+model CameraPreset {
+  id               String   @id @default(cuid())
+  key              String   @unique
+  label            String
+  workflowRef      String
+  durationSec      Int
+  aspectRatio      String
+  qualityTier      String
+  runtimeEstimateS Int
+  paramsJson       Json
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  renderJobs RenderJob[]
+}
+
+model RenderJob {
+  id                 String          @id @default(cuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cameraPresetId     String
+  cameraPreset       CameraPreset    @relation(fields: [cameraPresetId], references: [id])
+  status             RenderJobStatus @default(queued)
+  inputImageUrl      String
+  outputVideoUrl     String?
+  runpodJobId        String?         @unique
+  runpodRequestBody  Json?
+  runpodResponseBody Json?
+  errorMessage       String?
+  costUsdEstimate    Float
+  heldCredits        Int
+  finalCredits       Int?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  completedAt        DateTime?
+
+  assets RenderAsset[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model RenderAsset {
+  id           String          @id @default(cuid())
+  renderJobId  String
+  renderJob    RenderJob       @relation(fields: [renderJobId], references: [id], onDelete: Cascade)
+  kind         RenderAssetKind
+  storageKey   String
+  url          String
+  mimeType     String?
+  sizeBytes    Int?
+  createdAt    DateTime        @default(now())
+
+  @@index([renderJobId, kind])
+}
+
+model StripeCustomer {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId String   @unique
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, stripeCustomerId])
+}
+
+model StripeCheckoutSession {
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeSessionId       String   @unique
+  stripePaymentIntentId String?
+  packageCode           String
+  creditsToGrant        Int
+  amountUsd             Float
+  status                String   @default("created")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model StripeWebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  eventType String
+  createdAt DateTime @default(now())
+}

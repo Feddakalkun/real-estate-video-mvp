@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Real Estate Video MVP
 
-## Getting Started
+Collaborative SaaS MVP for brokers:
 
-First, run the development server:
+- Image upload -> camera preset -> render request
+- Wallet + credits
+- Stripe top-up (feature-flagged)
+- Runpod render queue (feature-flagged)
+- Team workflow with PR + Vercel preview
+
+## Stack
+
+- Next.js 16 + TypeScript
+- Prisma (current local dev uses SQLite file)
+- Auth.js / NextAuth
+- Stripe
+- Runpod
+- S3-compatible storage (with local fallback)
+
+## Team Workflow (Locked)
+
+- Branches:
+  - `feat/ui-*`
+  - `feat/api-*`
+  - `fix/*`
+- `main` should be protected in GitHub.
+- All merges through PR.
+- Each PR must pass:
+  - `npm run lint`
+  - `npm run build`
+- Each PR should include Vercel preview URL + screenshots.
+
+See [CONTRIBUTING.md](/H:/00001.app/real-estate-video-mvp/CONTRIBUTING.md).
+
+## Scripts
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
+npm run prisma:generate
+npm run prisma:push
+npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create `.env.local` from `.env.example`
+2. Install dependencies
+3. Run Prisma push + seed
+4. Start dev server
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+copy .env.example .env.local
+npm install
+npm run prisma:push
+npm run db:seed
+npm run dev
+```
 
-## Learn More
+Open:
+- `http://localhost:3000`
+- `http://localhost:3000/dashboard`
 
-To learn more about Next.js, take a look at the following resources:
+## Preview/Production Safety
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Feature flags control live integrations:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `FEATURE_STRIPE_LIVE`
+- `FEATURE_RUNPOD_LIVE`
 
-## Deploy on Vercel
+Recommended:
+- Preview: both `false`
+- Production: both `true` only after validation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Capability endpoint:
+- `GET /api/system/capabilities`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Core API
+
+### Billing
+- `POST /api/billing/checkout-session`
+- `POST /api/billing/webhook/stripe`
+- `GET /api/billing/wallet`
+- `GET /api/billing/transactions`
+
+### Render
+- `POST /api/render/jobs`
+- `GET /api/render/jobs`
+- `GET /api/render/jobs/:id`
+- `POST /api/render/jobs/:id/cancel`
+- `GET /api/render/presets`
+
+### Runtime
+- `POST /api/runpod/webhook`
+- `GET /api/system/capabilities`
+
+## Design Direction
+
+UI should follow FeddaHub-quality polish:
+- Intentional hierarchy
+- Bold but clean visual language
+- Strong status clarity
+- Mobile + desktop parity
+
+## Docs
+
+- [Vercel preview setup](/H:/00001.app/real-estate-video-mvp/docs/VERCEL_PREVIEW_SETUP.md)
+- [C mindset map](/H:/00001.app/real-estate-video-mvp/docs/C_MINDSET_MAP.md)
