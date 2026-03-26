@@ -57,6 +57,10 @@ function statusClass(status: string) {
   return `status-pill ${normalized}`;
 }
 
+function formatTransactionType(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function DashboardClient() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [presets, setPresets] = useState<CameraPreset[]>([]);
@@ -168,200 +172,159 @@ export function DashboardClient() {
   }
 
   return (
-    <div className="dashboard-shell">
-      <section className="studio-hero">
-        <p className="badge">Real Estate Video Studio</p>
-        <h2>Cinematic property motion from one still image</h2>
-        <p className="small-muted" style={{ color: "#d5e2e8", marginTop: "0.35rem" }}>
-          Pick a movement style, upload the photo, and deliver client-ready clips in minutes.
-        </p>
+    <div className="site-shell">
+      <div className="dashboard-shell">
+        <header className="dashboard-top">
+          <div className="dashboard-title">
+            <p className="badge">Fedda Real Estate Studio</p>
+            <h1>Render Console</h1>
+            <p className="small-muted">
+              Upload image, choose camera move, monitor job lifecycle, and ship client-ready clips.
+            </p>
+          </div>
+          <button className="button-secondary" onClick={() => signOut({ callbackUrl: "/" })}>
+            Sign out
+          </button>
+        </header>
+
         {!capabilities?.runpodLiveEnabled || !capabilities?.stripeLiveEnabled ? (
-          <p
-            style={{
-              marginTop: "0.7rem",
-              fontSize: "0.82rem",
-              background: "rgba(255,135,95,0.14)",
-              border: "1px solid rgba(255,170,140,0.44)",
-              borderRadius: "10px",
-              padding: "0.45rem 0.6rem",
-              display: "inline-block",
-            }}
-          >
-            Preview Safe Mode: {capabilities?.vercelEnv || "local"} environment with live integrations
-            partially disabled.
+          <p className="safemode-banner">
+            Preview Safe Mode: {capabilities?.vercelEnv || "local"} with one or more live connectors
+            disabled.
           </p>
         ) : null}
-        <div className="studio-stats">
-          <div className="studio-stat">
-            <p>Wallet</p>
-            <p>{wallet?.balanceCredits ?? 0} credits</p>
-          </div>
-          <div className="studio-stat">
-            <p>Jobs</p>
-            <p>{jobs.length} total</p>
-          </div>
-          <div className="studio-stat">
-            <p>Output Ready</p>
-            <p>{jobs.filter((job) => job.status === "succeeded").length}</p>
-          </div>
-        </div>
-      </section>
 
-      <div className="dashboard-grid" style={{ marginTop: "1rem" }}>
-        <section className="panel" style={{ padding: "1rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.8rem" }}>
-            <div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Render Console</h3>
-              <p className="small-muted">Step 1: choose movement. Step 2: upload. Step 3: generate.</p>
-            </div>
-            <button className="button-secondary" onClick={() => signOut({ callbackUrl: "/" })}>
-              Sign out
-            </button>
-          </div>
-
-          <div style={{ marginTop: "1rem" }}>
-            <p style={{ fontWeight: 700, marginBottom: "0.5rem" }}>Camera movements</p>
-            <div className="workflow-grid">
-              {presets.map((preset) => (
-                <button
-                  key={preset.id}
-                  className={`workflow-chip ${selectedPresetId === preset.id ? "active" : ""}`}
-                  onClick={() => setSelectedPresetId(preset.id)}
-                  type="button"
-                >
-                  <p style={{ fontWeight: 700 }}>{preset.label}</p>
-                  <p className="small-muted">
-                    {preset.durationSec}s • {preset.aspectRatio} • ~{preset.runtimeEstimateS}s
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginTop: "1rem", display: "grid", gap: "0.65rem" }}>
-            <label htmlFor="image-upload" style={{ fontWeight: 700 }}>
-              Property image
-            </label>
-            <input
-              id="image-upload"
-              className="field"
-              type="file"
-              accept="image/*"
-              onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
-            />
-            <p className="small-muted">
-              Workflow ref: {activePreset?.workflowRef || "Select a preset first"}
-            </p>
-            <button className="button-primary" onClick={handleGenerate} disabled={isSubmitting}>
-              {isSubmitting ? "Queuing..." : "Generate video"}
-            </button>
-            {!capabilities?.runpodLiveEnabled ? (
-              <p className="small-muted" style={{ color: "#9b1f2e" }}>
-                Runpod live is disabled. Enable `FEATURE_RUNPOD_LIVE=true` to run real generations.
-              </p>
-            ) : null}
-            {statusText ? <p className="small-muted">{statusText}</p> : null}
-          </div>
-
-          <div style={{ marginTop: "1rem", display: "grid", gap: "0.65rem" }}>
-            {jobs.length === 0 ? (
-              <p className="small-muted">No jobs yet. Your first render will appear here.</p>
-            ) : (
-              jobs.map((job) => (
-                <article key={job.id} className="panel" style={{ padding: "0.75rem" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                    }}
+        <div className="dashboard-grid" style={{ marginTop: "0.9rem" }}>
+          <main style={{ display: "grid", gap: "1rem" }}>
+            <section className="panel builder-panel">
+              <h2 className="panel-title">Build New Clip</h2>
+              <p className="small-muted">Select camera movement and upload one property still image.</p>
+              <div className="workflow-grid">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    className={`workflow-chip ${selectedPresetId === preset.id ? "active" : ""}`}
+                    onClick={() => setSelectedPresetId(preset.id)}
+                    type="button"
                   >
-                    <div>
-                      <p style={{ fontWeight: 700 }}>{job.cameraPreset.label}</p>
-                      <p className="small-muted">
-                        Hold {job.heldCredits} credits • {new Date(job.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <span className={statusClass(job.status)}>{job.status}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", marginTop: "0.6rem" }}>
-                    <a className="button-secondary" href={job.inputImageUrl} target="_blank" rel="noreferrer">
-                      Input
-                    </a>
-                    {job.outputVideoUrl ? (
-                      <a
-                        className="button-primary"
-                        href={job.outputVideoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Download
-                      </a>
-                    ) : null}
-                  </div>
-                  {job.errorMessage ? (
-                    <p style={{ marginTop: "0.45rem", color: "#9b1f2e", fontWeight: 600 }}>
-                      {job.errorMessage}
+                    <p className="workflow-title">{preset.label}</p>
+                    <p className="small-muted">
+                      {preset.durationSec}s • {preset.aspectRatio} • ~{preset.runtimeEstimateS}s
                     </p>
-                  ) : null}
-                </article>
-              ))
-            )}
-          </div>
-        </section>
+                  </button>
+                ))}
+              </div>
 
-        <aside style={{ display: "grid", gap: "1rem", alignContent: "start" }}>
-          <section className="panel" style={{ padding: "1rem" }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Top Up</h3>
-            <p className="small-muted">Buy credits through Stripe checkout.</p>
-            <div style={{ display: "grid", gap: "0.55rem", marginTop: "0.7rem" }}>
-              {creditPackages.map((pack) => (
-                <button
-                  key={pack.code}
-                  className="button-secondary"
-                  style={{ textAlign: "left", borderRadius: "14px" }}
-                  onClick={() => void handleTopUp(pack.code)}
-                  disabled={!capabilities?.stripeLiveEnabled}
-                >
-                  <strong>{pack.label}</strong>
-                  <div className="small-muted">
-                    {pack.credits} credits · ${pack.amountUsd}
-                  </div>
+              <div className="uploader-block">
+                <label htmlFor="image-upload" style={{ fontWeight: 650 }}>
+                  Property image
+                </label>
+                <input
+                  id="image-upload"
+                  className="field"
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                />
+                <p className="small-muted">
+                  Workflow ref: {activePreset?.workflowRef || "Select a preset first"}
+                </p>
+                <button className="button-primary" onClick={handleGenerate} disabled={isSubmitting}>
+                  {isSubmitting ? "Queuing..." : "Generate video"}
                 </button>
-              ))}
-            </div>
-            {!capabilities?.stripeLiveEnabled ? (
-              <p className="small-muted" style={{ marginTop: "0.6rem", color: "#9b1f2e" }}>
-                Stripe live checkout is disabled in this environment.
-              </p>
-            ) : null}
-          </section>
+                {!capabilities?.runpodLiveEnabled ? (
+                  <p className="alert-error">
+                    Runpod live is disabled. Enable `FEATURE_RUNPOD_LIVE=true` for real generation.
+                  </p>
+                ) : null}
+                {statusText ? <p className="small-muted">{statusText}</p> : null}
+              </div>
+            </section>
 
-          <section className="panel" style={{ padding: "1rem" }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Recent Wallet Events</h3>
-            <div style={{ marginTop: "0.7rem", display: "grid", gap: "0.5rem" }}>
-              {wallet?.transactions?.length ? (
-                wallet.transactions.slice(0, 8).map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="panel"
-                    style={{ padding: "0.55rem", borderRadius: "12px", background: "#f9fcff" }}
+            <section className="panel jobs-panel">
+              <h2 className="panel-title">Job Tracker</h2>
+              <p className="small-muted">Realtime queue and output download history.</p>
+              <div className="jobs-list">
+                {jobs.length === 0 ? (
+                  <p className="small-muted">No jobs yet. Your first render will appear here.</p>
+                ) : (
+                  jobs.map((job) => (
+                    <article key={job.id} className="job-card">
+                      <div className="job-head">
+                        <div>
+                          <p style={{ fontWeight: 700 }}>{job.cameraPreset.label}</p>
+                          <p className="small-muted">
+                            Hold {job.heldCredits} credits • {new Date(job.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className={statusClass(job.status)}>{job.status}</span>
+                      </div>
+                      <div className="job-actions">
+                        <a className="button-secondary" href={job.inputImageUrl} target="_blank" rel="noreferrer">
+                          Input
+                        </a>
+                        {job.outputVideoUrl ? (
+                          <a
+                            className="button-primary"
+                            href={job.outputVideoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Download
+                          </a>
+                        ) : null}
+                      </div>
+                      {job.errorMessage ? <p className="alert-error">{job.errorMessage}</p> : null}
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
+          </main>
+
+          <aside style={{ display: "grid", gap: "1rem", alignContent: "start" }}>
+            <section className="panel wallet-panel">
+              <h3 className="panel-title">Wallet</h3>
+              <p className="small-muted">
+                Balance: <strong>{wallet?.balanceCredits ?? 0}</strong> credits
+              </p>
+              <div className="wallet-pack-list">
+                {creditPackages.map((pack) => (
+                  <button
+                    key={pack.code}
+                    className="wallet-pack"
+                    onClick={() => void handleTopUp(pack.code)}
+                    disabled={!capabilities?.stripeLiveEnabled}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ textTransform: "capitalize", fontWeight: 600 }}>
-                        {transaction.type.replace("_", " ")}
-                      </span>
+                    <strong>{pack.label}</strong>
+                    <div className="small-muted">
+                      {pack.credits} credits • ${pack.amountUsd}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {!capabilities?.stripeLiveEnabled ? (
+                <p className="alert-error">Stripe live checkout is disabled in this environment.</p>
+              ) : null}
+            </section>
+
+            <section className="panel wallet-panel">
+              <h3 className="panel-title">Recent Wallet Events</h3>
+              <div className="wallet-events">
+                {wallet?.transactions?.length ? (
+                  wallet.transactions.slice(0, 8).map((transaction) => (
+                    <div key={transaction.id} className="wallet-event">
+                      <span>{formatTransactionType(transaction.type)}</span>
                       <strong>{transaction.creditsDelta > 0 ? "+" : ""}{transaction.creditsDelta}</strong>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <p className="small-muted">No wallet activity yet.</p>
-              )}
-            </div>
-          </section>
-        </aside>
+                  ))
+                ) : (
+                  <p className="small-muted">No wallet activity yet.</p>
+                )}
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
     </div>
   );
