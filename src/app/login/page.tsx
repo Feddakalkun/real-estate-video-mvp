@@ -57,12 +57,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="hero-shell">
-      <section className="hero-card">
-        <p className="badge">Secure Login</p>
-        <h1>Sign in with magic link</h1>
-        <p>Enter your email and we will send a one-time sign-in link.</p>
-        <form onSubmit={onAdminLogin} style={{ marginTop: "1.2rem", display: "grid", gap: "0.75rem" }}>
+    <main className="site-shell login-shell">
+      <section className="site-wrap panel login-card">
+        <p className="badge">Secure Access</p>
+        <h1 style={{ fontSize: "1.9rem", fontWeight: 800, marginTop: "0.7rem" }}>
+          Sign in to your studio
+        </h1>
+        <p className="small-muted">Use admin preview login or request a magic link by email.</p>
+        <form onSubmit={onAdminLogin} style={{ marginTop: "1rem", display: "grid", gap: "0.75rem" }}>
           <label htmlFor="username">Admin username</label>
           <input
             id="username"
@@ -91,7 +93,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div style={{ height: 1, background: "#dde7e4", margin: "1rem 0" }} />
+        <div className="section-split" />
 
         <form onSubmit={onSubmit} style={{ display: "grid", gap: "0.75rem" }}>
           <label htmlFor="email">Email</label>
@@ -108,7 +110,7 @@ export default function LoginPage() {
             {loading ? "Sending link..." : "Send magic link"}
           </button>
         </form>
-        {error ? <p style={{ color: "#b00020", marginTop: "0.8rem" }}>{error}</p> : null}
+        {error ? <p className="alert-error">{error}</p> : null}
       </section>
     </main>
   );
