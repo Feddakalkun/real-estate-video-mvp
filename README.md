@@ -104,6 +104,8 @@ UI should follow FeddaHub-quality polish:
 - Strong status clarity
 - Mobile + desktop parity
 
+Smoke branch note: enabling first PR status check discovery for branch protection setup.
+
 ## Docs
 
 - [Vercel preview setup](/H:/00001.app/real-estate-video-mvp/docs/VERCEL_PREVIEW_SETUP.md)
